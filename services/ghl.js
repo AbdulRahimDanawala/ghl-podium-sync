@@ -151,7 +151,7 @@ export async function sendMessageToGHL(contactId, message) {
   console.log("Location ID from sendMessageToGHL function " + locationId);
   const body = {
     type: "Custom",
-    conversationProviderId: "6914e31f77c6da0f0bb91d5c",
+    conversationProviderId: "6925fd0c527ff0b8f1e92b60",
     contactId,
     message,
     direction: "inbound",
