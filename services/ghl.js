@@ -150,7 +150,7 @@ export async function sendMessageToGHL(contactId, message) {
   const locationId = getLocationId();
   console.log("Location ID from sendMessageToGHL function " + locationId);
   const body = {
-    type: "Custom",
+    type: "SMS",
     conversationProviderId: "6925fd0c527ff0b8f1e92b60",
     contactId,
     message,
