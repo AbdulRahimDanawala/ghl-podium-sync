@@ -4,7 +4,9 @@ import dotenv from "dotenv";
 import { saveTokens, loadTokens, saveLocationId, getLocationId } from "./../tokenStore.js";
 
 dotenv.config();
-
+let lastConversataionID = null;
+let lastMessage = null;
+let messageSentTime = null;
 const TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
 const API_BASE = "https://services.leadconnectorhq.com";
 
@@ -147,6 +149,9 @@ export async function upsertContact(phone, name = "") {
 // }
 
 export async function sendMessageToGHL(contactId, message) {
+  if (message === lastMessage && conversationid === lastConversataionID) {
+    return;
+  }
   const locationId = getLocationId();
   console.log("Location ID from sendMessageToGHL function " + locationId);
   const body = {
@@ -160,7 +165,39 @@ export async function sendMessageToGHL(contactId, message) {
   return callGHLApi("/conversations/messages/inbound", "POST", body);
 }
 
+export async function sendOutboundToGHL(contactId, message, conversationid) {
+  if (message === lastMessage && conversationid === lastConversataionID) {
+    return;
+  }
+  const locationId = getLocationId();
+  console.log("Location ID from sendMessageToGHL function " + locationId);
+  const body = {
+    type: "SMS",
+    conversationProviderId: "6925fd0c527ff0b8f1e92b60",
+    contactId,
+    message,
+    direction: "outbound",
+    date: new Date().toISOString()
+  };
+  return callGHLApi("/conversations/messages/inbound", "POST", body);
+}
+
 export async function getContactDetails(contactId) {
  
   return callGHLApi(`/contacts/${contactId}`, "GET");
 }
+
+export async function saveConversationMessage(conversationID, message) {
+  lastConversataionID = conversationID
+  lastMessage = message
+  messageSentTime = Date.now();
+}
+
+  // Auto reset after 10 seconds
+setInterval(() => {
+  if (Date.now() - messageSentTime > 10000) {
+    messageSentTime = null;
+    lastMessage = null;
+    lastConversataionID = null;
+  }
+}, 3000);

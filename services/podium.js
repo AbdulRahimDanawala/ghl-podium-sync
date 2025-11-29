@@ -3,6 +3,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
+import { saveConversationMessage } from "./ghl.js";
 dotenv.config();
 
 const tokenFile = path.join(process.cwd(), "tokens.json");
@@ -143,6 +144,7 @@ export async function sendToPodium(phoneNumber, message, name) {
     });
 
     console.log("📨 Podium Message Sent:", res.data);
+    saveConversationMessage(res.data.data.conversation.uid, res.data.data.body)
     return res.data;
 
   } catch (err) {
@@ -191,7 +193,7 @@ export async function createPodiumWebhook(accessToken) {
       {
         locationUid: process.env.PODIUM_LOCATION_ID,
         url: `${base}/webhook/podium`,
-        eventTypes: ["message.received"]  // <-- correct
+        eventTypes: ["message.received", "message.sent"]  // <-- correct
       },
       {
         headers: {

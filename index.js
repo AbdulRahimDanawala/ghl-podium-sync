@@ -7,6 +7,7 @@ import {
   exchangeCodeForToken,
   upsertContact,
   sendMessageToGHL,
+  sendOutboundToGHL,
   getContactDetails
 } from "./services/ghl.js";
 
@@ -97,6 +98,8 @@ app.post("/webhook/podium", async (req, res) => {
     const payload = req.body;
     const data = payload.data || payload;
 
+    const eventType = payload?.metadata.eventType || null;
+
     const phoneNumber = data?.conversation?.channel?.identifier;
     const message = data?.body;
     const name = data?.contactName || data?.contact?.name || "Podium User";
@@ -107,7 +110,24 @@ app.post("/webhook/podium", async (req, res) => {
     }
 
     const contact = await upsertContact(phoneNumber, name);
-    await sendMessageToGHL(contact.contact.id, message);
+    console.log("eventType " + eventType) 
+    const isOutbound = eventType === "message.sent";
+    const isInbound  = eventType === "message.received";
+
+    console.log("Is Inbound? " + isInbound)
+    console.log("Is Outbound? " + isOutbound)
+
+    if (isInbound) {
+      console.log("📥 INBOUND from Podium → GHL");
+      await sendMessageToGHL(contact.contact.id, message, data.conversation.uid);
+    }
+
+    if (isOutbound) {
+      console.log("📤 OUTBOUND from Podium → GHL");
+      await sendOutboundToGHL(contact.contact.id, message, data.conversation.uid);
+    }
+
+    // await sendMessageToGHL(contact.contact.id, message);
 
     console.log("✅ Message forwarded to GHL.");
     
