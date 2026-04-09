@@ -44,7 +44,7 @@ app.get("/oauth/start", (req, res) => {
     "users.readonly"
   ].join(" ");
   
-  const authURL = `https://marketplace.gohighlevel.com/oauth/choose-location?response_type=code&redirect_uri=${process.env.GHL_REDIRECT_URI}&client_id=${process.env.GHL_CLIENT_ID}&scope=${scopes}`;
+   const authURL = `https://marketplace.gohighlevel.com/oauth/chooselocation?response_type=code&redirect_uri=${process.env.GHL_REDIRECT_URI}&client_id=${process.env.GHL_CLIENT_ID}&scope=${scopes}`;
   res.redirect(authURL);
 });
 
