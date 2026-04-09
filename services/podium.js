@@ -135,6 +135,14 @@ export async function sendToPodium(phoneNumber, message, name) {
     locationUid: process.env.PODIUM_LOCATION_ID
   };
 
+  console.log("\n   ┌─ Podium API Request ─────────────────");
+  console.log("   │ URL:", url);
+  console.log("   │ PODIUM_LOCATION_ID:", process.env.PODIUM_LOCATION_ID || "⚠️ NOT SET");
+  console.log("   │ PODIUM_BASE_URL:", baseURL || "⚠️ NOT SET");
+  console.log("   │ Token (first 20 chars):", accessToken?.substring(0, 20) + "...");
+  console.log("   │ Payload:", JSON.stringify(payload, null, 2).split("\n").join("\n   │ "));
+  console.log("   └────────────────────────────────────────");
+
   try {
     const res = await axios.post(url, payload, {
       headers: {
@@ -143,12 +151,19 @@ export async function sendToPodium(phoneNumber, message, name) {
       }
     });
 
-    console.log("📨 Podium Message Sent:", res.data);
+    console.log("   📨 Podium Response Status:", res.status);
+    console.log("   📨 Podium Response Body:", JSON.stringify(res.data, null, 2));
     saveConversationMessage(res.data.data.conversation.uid, res.data.data.body)
     return res.data;
 
   } catch (err) {
-    console.error("❌ Podium Send Error:", err.response?.data || err.message);
+    console.error("\n   ┌─ ❌ Podium API Error ──────────────────");
+    console.error("   │ Status:", err.response?.status);
+    console.error("   │ Status Text:", err.response?.statusText);
+    console.error("   │ Error Body:", JSON.stringify(err.response?.data, null, 2));
+    console.error("   │ Request URL:", url);
+    console.error("   │ Request Payload:", JSON.stringify(payload, null, 2).split("\n").join("\n   │ "));
+    console.error("   └────────────────────────────────────────");
     throw err;
   }
 }
