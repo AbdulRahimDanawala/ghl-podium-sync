@@ -33,7 +33,18 @@ app.get("/", (req, res) => {
 // GHL OAuth
 /////////////////////////////////////////////////
 app.get("/oauth/start", (req, res) => {
-  const authURL = `https://app.gohighlevel.com/oauth/authorize?response_type=code&client_id=${process.env.GHL_CLIENT_ID}&redirect_uri=${process.env.GHL_REDIRECT_URI}`;
+  const scopes = [
+    "conversations.readonly",
+    "conversations.write",
+    "conversations/message.readonly",
+    "conversations/message.write",
+    "contacts.readonly",
+    "contacts.write",
+    "locations.readonly",
+    "users.readonly"
+  ].join(" ");
+  
+  const authURL = `https://marketplace.gohighlevel.com/oauth/choose-location?response_type=code&redirect_uri=${process.env.GHL_REDIRECT_URI}&client_id=${process.env.GHL_CLIENT_ID}&scope=${scopes}`;
   res.redirect(authURL);
 });
 
@@ -110,9 +121,9 @@ app.post("/webhook/podium", async (req, res) => {
     }
 
     const contact = await upsertContact(phoneNumber, name);
-    console.log("eventType " + eventType)
+    console.log("eventType " + eventType) 
     const isOutbound = eventType === "message.sent";
-    const isInbound = eventType === "message.received";
+    const isInbound  = eventType === "message.received";
 
     console.log("Is Inbound? " + isInbound)
     console.log("Is Outbound? " + isOutbound)
@@ -130,7 +141,7 @@ app.post("/webhook/podium", async (req, res) => {
     // await sendMessageToGHL(contact.contact.id, message);
 
     console.log("✅ Message forwarded to GHL.");
-
+    
 
   } catch (err) {
     console.error("❌ Podium Webhook Error:", err.message);
