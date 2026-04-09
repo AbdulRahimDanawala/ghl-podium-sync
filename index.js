@@ -110,9 +110,9 @@ app.post("/webhook/podium", async (req, res) => {
     }
 
     const contact = await upsertContact(phoneNumber, name);
-    console.log("eventType " + eventType) 
+    console.log("eventType " + eventType)
     const isOutbound = eventType === "message.sent";
-    const isInbound  = eventType === "message.received";
+    const isInbound = eventType === "message.received";
 
     console.log("Is Inbound? " + isInbound)
     console.log("Is Outbound? " + isOutbound)
@@ -130,7 +130,7 @@ app.post("/webhook/podium", async (req, res) => {
     // await sendMessageToGHL(contact.contact.id, message);
 
     console.log("✅ Message forwarded to GHL.");
-    
+
 
   } catch (err) {
     console.error("❌ Podium Webhook Error:", err.message);
@@ -184,19 +184,78 @@ app.post("/webhook/podium", async (req, res) => {
 // GHL → Podium Webhook
 /////////////////////////////////////////////////
 app.post("/webhook/ghl", async (req, res) => {
-  const { phone, message,contactId } = req.body;
-  console.log(req.body)
+  console.log("\n══════════════════════════════════════════");
+  console.log("📩 [GHL→Podium] Webhook received at", new Date().toISOString());
+  console.log("══════════════════════════════════════════");
+  console.log("📦 Raw Body:", JSON.stringify(req.body, null, 2));
 
+  const { phone, message, contactId } = req.body;
 
-  
+  console.log("🔍 Extracted Fields:");
+  console.log("   phone     →", phone || "⚠️ MISSING");
+  console.log("   message   →", message || "⚠️ MISSING");
+  console.log("   contactId →", contactId || "⚠️ MISSING");
+
+  // ── Validate required fields ──
+  if (!phone || !message || !contactId) {
+    const missing = [];
+    if (!phone) missing.push("phone");
+    if (!message) missing.push("message");
+    if (!contactId) missing.push("contactId");
+    console.log(`❌ [GHL→Podium] REJECTED — Missing fields: ${missing.join(", ")}`);
+    return res.status(400).json({
+      error: "Missing required fields",
+      missing,
+      received: req.body
+    });
+  }
+
+  // ── Step 1: Get contact details from GHL ──
+  let getcontact;
   try {
-    const getcontact = await getContactDetails(contactId);
-    console.log("line 174 "+ JSON.stringify(getcontact))
-    await sendToPodium(phone, message, `${getcontact.contact.firstName} ${getcontact.contact.lastName}`);
+    console.log("\n── Step 1: Fetching contact from GHL ──");
+    console.log("   contactId:", contactId);
+    getcontact = await getContactDetails(contactId);
+    console.log("   ✅ Contact found:", getcontact.contact?.firstName, getcontact.contact?.lastName);
+    console.log("   📌 Full contact:", JSON.stringify(getcontact.contact, null, 2));
+  } catch (err) {
+    console.log("   ❌ GHL getContactDetails FAILED");
+    console.log("   Status:", err.response?.status);
+    console.log("   Error:", JSON.stringify(err.response?.data || err.message, null, 2));
+    return res.status(500).json({
+      error: "Failed to fetch contact from GHL",
+      step: "getContactDetails",
+      contactId,
+      status: err.response?.status,
+      details: err.response?.data || err.message
+    });
+  }
+
+  // ── Step 2: Send message to Podium ──
+  try {
+    const contactName = `${getcontact.contact.firstName || ""} ${getcontact.contact.lastName || ""}`.trim();
+    console.log("\n── Step 2: Sending message to Podium ──");
+    console.log("   phone:", phone);
+    console.log("   message:", message);
+    console.log("   contactName:", contactName);
+
+    const result = await sendToPodium(phone, message, contactName);
+    console.log("   ✅ Podium accepted the message");
+    console.log("══════════════════════════════════════════\n");
     return res.sendStatus(200);
   } catch (err) {
-    console.log("❌ Podium send error:", err.message);
-    return res.status(500).json({ error: err .message });
+    console.log("   ❌ Podium sendToPodium FAILED");
+    console.log("   Status:", err.response?.status);
+    console.log("   Error Body:", JSON.stringify(err.response?.data || err.message, null, 2));
+    console.log("   Headers:", JSON.stringify(err.response?.headers || {}, null, 2));
+    console.log("══════════════════════════════════════════\n");
+    return res.status(500).json({
+      error: "Failed to send message to Podium",
+      step: "sendToPodium",
+      phone,
+      status: err.response?.status,
+      details: err.response?.data || err.message
+    });
   }
 });
 
