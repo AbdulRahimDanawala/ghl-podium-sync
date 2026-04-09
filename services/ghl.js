@@ -22,6 +22,7 @@ export async function exchangeCodeForToken(code) {
   params.append("grant_type", "authorization_code");
   params.append("code", code);
   params.append("redirect_uri", process.env.GHL_REDIRECT_URI);
+  params.append("user_type", "Location");
 
   const { data } = await axios.post(TOKEN_URL, params, {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -59,6 +60,7 @@ async function refreshTokenIfNeeded() {
     params.append("client_secret", process.env.GHL_CLIENT_SECRET);
     params.append("grant_type", "refresh_token");
     params.append("refresh_token", tokenCache.refresh_token);
+    params.append("user_type", "Location");
 
     const { data } = await axios.post(TOKEN_URL, params, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
